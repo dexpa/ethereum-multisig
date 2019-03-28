@@ -5,26 +5,98 @@ import json
 import time
 from warnings import warn
 
-from web3 import Web3, HTTPProvider
+from web3 import Web3, HTTPProvider, utils
+from web3.utils.encoding import to_hex
 
-LOCAL_NODE = 'http://localhost:8545'
+all_ethereum_networks = ['local', 'mainnet', 'ropsten', 'rinkeby']
 
-def main(owner1, owner2, owner3):
-    contract_json = json.load(open('./build/contracts/Multisig2of3.json'))
+network = all_ethereum_networks[2]
+
+if network == 'local':
+    LOCAL_NODE = 'http://localhost:8545'
+else:
+    LOCAL_NODE = 'https://{}.infura.io/v3/af13ffcce8c64f6796185cc860609fd0'.format(network)
+
+KEYS_NODE = 'http://localhost:8545'
+
+def main(abi_file, bin_file, owner1, owner2, owner3):
+
+    abi = json.load(open(abi_file))
+    bin_input = open(bin_file, "r") # opening for [r]eading as [b]inary
+    binary = bin_input.read(1024*1024) # if you only wanted to read 512 bytes, do .read(512)
+    bin_input.close()
+
+    m1 = Web3.toChecksumAddress(owner1)
+    m2 = Web3.toChecksumAddress(owner2)
+    m3 = Web3.toChecksumAddress(owner3)
+    
+    print("Creating w3 instance using {}".format(LOCAL_NODE))
     w3 = Web3(HTTPProvider(LOCAL_NODE, request_kwargs={'timeout': 60}))
-    contract = w3.eth.contract(abi=contract_json['abi'],
-                               bytecode=contract_json['bytecode'])
-    warn("Authorize Transaction Creating Contract, probably in a browser window")
-    tx_hash = contract.deploy(transaction={'from': w3.eth.accounts[0],
-                                           'gas': 1300000},
-                              args = [owner1, owner2, owner3])
-    time.sleep(10)
-    tx_receipt = w3.eth.getTransactionReceipt(tx_hash)
-    contract_address = tx_receipt['contractAddress']
-    print(contract_address)
+    print("Chain ID {}, latest block {}".format(w3.net.chainId, w3.eth.blockNumber))
+
+    print("Creating w3 key instance using {}".format(KEYS_NODE))
+    w3_keys = Web3(HTTPProvider(KEYS_NODE, request_kwargs={'timeout': 60}))
+    print("Chain ID {}, latest block {}".format(w3_keys.net.chainId, w3_keys.eth.blockNumber))
+
+    files = [
+        "/home/ilya/.ethereum/testnet/keystore/UTC--2019-03-20T11-03-41.110235724Z--742a44df2e86eaf6f595dda3f108a501344149f0",
+        "/home/ilya/.ethereum/testnet/keystore/UTC--2019-03-21T11-54-22.405283543Z--42339ed7a9f1b3da32f089e9a643727bf657fe23",
+        "/home/ilya/.ethereum/testnet/keystore/UTC--2019-03-21T11-53-56.912310999Z--bb06c14e5d851b67f3567c0d668ca0ccd7253c78"
+    ]
+    
+    with open(files[0]) as keyfile:
+        encrypted_key = keyfile.read()
+        private_key = w3.eth.account.decrypt(encrypted_key, '123654')
+
+    #determine keys balances
+    accounts = w3_keys.eth.accounts
+    for a in accounts:
+        balance = w3.eth.getBalance(a)
+        print("Account {} >> balance {}".format(a, balance))
+        if balance > 0 and not w3_keys.eth.defaultAccount:
+            print("\tSet default account to {}".format(a))
+            w3_keys.eth.defaultAccount = w3_keys.eth.accounts[0]
+
+    contract = w3.eth.contract(abi=abi,
+                               bytecode=binary)
+    
+    nonce = w3.eth.getTransactionCount(w3_keys.eth.defaultAccount)
+    print("Got nonce {} for default account".format(nonce))
+    contract_tx = {'from': w3_keys.eth.accounts[0], 'gas': 1300000, 'nonce': nonce}
+    
+    """
+    transaction = {
+        'to': '0xF0109fC8DF283027b6285cc889F5aA624EaC1F55',
+        'value': 1000000000,
+        'gas': 1300000,
+        'gasPrice': 234567897654321,
+        'nonce': 0,
+        'chainId': 1
+    }
+    """
+    print("Authorize Transaction Creating Contract, probably in a browser window")
+    #tx_hash = contract.constructor(m1,m2,m3).transact()
+    tx = contract.constructor(m1,m2,m3).buildTransaction(contract_tx)
+    tx_signed = w3_keys.eth.account.signTransaction(tx, private_key=private_key)
+    #print("Signed tx \n {} \n".format(tx_signed))
+    tx_hash = w3.eth.sendRawTransaction(tx_signed['rawTransaction'])
+    print("Deploy Tx Hash >> {}".format(to_hex(tx_hash)))
+    #old test transaction
+    #tx_receipt = w3.eth.getTransactionReceipt("0x9bae900a05d76eca70c2fc7b9d17c5dde2121184505eaaae1ac2c0a79e905660")
+    #time.sleep(10)
+    tx_receipt = w3.eth.waitForTransactionReceipt(tx_hash)
+    if tx_receipt:
+        #print("Got receipt {}".format(tx_receipt))
+        contract_address = tx_receipt['contractAddress']
+        print("Contract address {}".format(contract_address))
+        print("Was transaction successful? \n")
+        print(tx_receipt['status'])
+    else:
+        print("Deployment failed")
+    print("Rec {}".format(tx_receipt))
     
 
 if __name__ == '__main__':
     if (len(sys.argv) < 4):
         sys.exit("USAGE: create_ethereum_multisig OWNER_ADDRESS_1 OWNER_ADDRESS_2 OWNER_ADDRESS_3")
-    main(sys.argv[1], sys.argv[2], sys.argv[3])
+    main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4] , sys.argv[5])
