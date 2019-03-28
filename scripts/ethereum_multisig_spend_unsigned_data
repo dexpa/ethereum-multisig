@@ -5,20 +5,29 @@ import sys
 import json
 import codecs
 from warnings import warn
-from eth_utils import to_bytes
+from eth_utils import to_bytes, from_wei, to_wei
+from web3 import Web3
 
-
-from web3 import Web3, HTTPProvider
-
-LOCAL_NODE = 'http://localhost:8545'
 
 def main(contract_address, destination_address, amount):
-    contract_json = json.load(open('./build/contracts/Multisig2of3.json'))
-    w3 = Web3(HTTPProvider(LOCAL_NODE, request_kwargs={'timeout': 60}))
+    with open('../build/MultiSig2of3.abi') as abi_file:
+        abi = json.load(abi_file)
+
+    dest = Web3.toChecksumAddress(destination_address)
+        
+    from my_eth_util import create_node
+    w3 = create_node(2)
+    chain_id = w3.net.chainId
+    gas_price = w3.eth.generateGasPrice()
+    if gas_price:
+        print("Current gas price is: {}".format(gas_price))
+    else:
+        print("Error while recieving gas price. Stopping")
+        sys.exit(1)
     
-    contract = w3.eth.contract(address=contract_address,abi=contract_json['abi'])
-    wei = Web3.toWei(amount, 'ether')
-    message = contract.call().generateMessageToSign(destination_address, wei)
+    contract = w3.eth.contract(address=contract_address, abi=abi)
+    wei = to_wei(amount, 'ether')
+    message = contract.call().generateMessageToSign(dest, wei)
 
     # https://github.com/ethereum/web3.py/issues/193
     print(to_bytes(message).hex())

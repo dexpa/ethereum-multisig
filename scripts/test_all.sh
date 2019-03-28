@@ -1,0 +1,13 @@
+#/bin/bash
+
+./create_ethereum_multisig ../build/MultiSig2of3.abi ../build/MultiSig2of3.bin ~/.ethereum/testnet/keystore/UTC--2019-03-20T11-03-41.110235724Z--742a44df2e86eaf6f595dda3f108a501344149f0 0x742a44df2e86eaf6f595dda3f108a501344149f0 0xbb06c14e5d851b67f3567c0d668ca0ccd7253c78 0x42339ed7a9f1b3da32f089e9a643727bf657fe23
+
+./deposit_ethereum_multisig ~/.ethereum/testnet/keystore/UTC--2019-03-20T11-03-41.110235724Z--742a44df2e86eaf6f595dda3f108a501344149f0 0.2 0xc6c980c99dC3d80B36E76E96628241eD3CFca856
+
+./ethereum_multisig_spend_unsigned_data 0xc6c980c99dC3d80B36E76E96628241eD3CFca856 0x42339ed7a9f1b3da32f089e9a643727bf657fe23 0.1
+
+./sign_multisig_with_keystore ed3faf93865964f861e9aca9eac010e9132652555abf33781945c550e3cccde6 ~/.ethereum/testnet/keystore/UTC--2019-03-21T11-53-56.912310999Z--bb06c14e5d851b67f3567c0d668ca0ccd7253c78
+./sign_multisig_with_keystore ed3faf93865964f861e9aca9eac010e9132652555abf33781945c550e3cccde6 ~/.ethereum/testnet/keystore/UTC--2019-03-21T11-54-22.405283543Z--42339ed7a9f1b3da32f089e9a643727bf657fe23
+
+./spend_ethereum_multisig ~/.ethereum/testnet/keystore/UTC--2019-03-20T11-03-41.110235724Z--742a44df2e86eaf6f595dda3f108a501344149f0 0xc6c980c99dC3d80B36E76E96628241eD3CFca856 0x42339ed7a9f1b3da32f089e9a643727bf657fe23 0.1 b4b7e9764cba2d3365bc549fb56837f1f261eb921eae57daf6a4a373706b9af752b4244b0290cd0678917df843c9aba3a0cd6c6bc62d5aed6db32362671642171c 1ee889d45ee993f9dca9de8e6f86c941b3ce88bed23b7f99bebcec63c7d5c1f118883f0f25545a102befbab8eb2bcc0d2d140b683a9dba5a48666f51591f76c51b
+Creating w3 instance using https://ropsten.infura.io/v3/af13ffcce8c64f6796185cc860609fd0
