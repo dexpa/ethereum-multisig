@@ -9,11 +9,12 @@ from eth_utils import to_bytes, from_wei, to_wei
 from web3 import Web3
 
 
-def main(contract_address, destination_address, amount):
-    with open('../build/MultiSig2of3.abi') as abi_file:
+def main(contract_address, destination_address, amount, token_address):
+    with open('../build/TimelockedMultiSig2of3.abi') as abi_file:
         abi = json.load(abi_file)
 
     dest = Web3.toChecksumAddress(destination_address)
+    token = Web3.toChecksumAddress(token_address)
         
     from my_eth_util import create_node
     w3 = create_node(2)
@@ -27,13 +28,13 @@ def main(contract_address, destination_address, amount):
     
     contract = w3.eth.contract(address=contract_address, abi=abi)
     wei = to_wei(amount, 'ether')
-    message = contract.call().generateMessageToSign(dest, wei)
+    message = contract.call().generateMessageToSign(token, dest, wei)
 
     # https://github.com/ethereum/web3.py/issues/193
     print(to_bytes(message).hex())
     
 
 if __name__ == '__main__':
-    if (len(sys.argv) < 4):
-        sys.exit("USAGE: ethereum_multisig_spend_unsigned_data CONTRACT_ADDRESS DESTINATION_ADDRESS AMOUNT")
-    main(sys.argv[1], sys.argv[2], sys.argv[3])
+    if (len(sys.argv) < 5):
+        sys.exit("USAGE: ethereum_multisig_spend_unsigned_data CONTRACT_ADDRESS DESTINATION_ADDRESS AMOUNT TOKEN_ADDRESS")
+    main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])

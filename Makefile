@@ -19,7 +19,7 @@ DAPP_PORT    ?= 8435
 MKDIR      := mkdir -p
 LN         := ln
 FIND       := find
-TRUFFLE    := $(NODE_DIR)/truffle/build/cli.bundled.js
+SOLC       := $(HOME)/.py-solc/solc-v0.4.24/bin/solc
 PIP        := $(VENV_DIR)/bin/pip
 PYTHON3    := $(shell command -v python3 2> /dev/null)
 
@@ -39,8 +39,8 @@ freeze:
 # == Contract ==
 #
 
-build/contracts/MultiSig2of3.json: contracts/MultiSig2of3.sol
-	$(TRUFFLE) compile
+build/contracts/MultiSig2of3.json: 
+	$(SOLC) --bin --abi --output-dir=./build ./contracts/MultiSig2of3.sol
 
 #
 # == Dependencies ==
@@ -52,4 +52,4 @@ $(VENV_DIR):
 
 python-dependencies: $(VENV_DIR)
 	$(PYTHON3) -m ensurepip --upgrade
-	$(PIP) install -r requirements.frozen.txt
+	$(PIP) install -r requirements.txt

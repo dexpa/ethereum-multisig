@@ -21,7 +21,7 @@ def parse_signature(signature):
     return [V, R, S]
 
 
-def main(keystore_path, contract_address, destination_address, amount, sig_1, sig_2):
+def main(keystore_path, contract_address, destination_address, amount, sig_1, sig_2, token_address):
 
     if not os.access(keystore_path, os.R_OK):
         print("Error while checking keystore file {}. Stopping".format(keystore_path))
@@ -46,11 +46,12 @@ def main(keystore_path, contract_address, destination_address, amount, sig_1, si
         w3.eth.defaultAccount = account
         nonce = w3.eth.getTransactionCount(account.address)
         
-    with open('../build/MultiSig2of3.abi') as abi_file:
+    with open('../build/TimelockedMultiSig2of3.abi') as abi_file:
         abi = json.load(abi_file)
 
     c_address = Web3.toChecksumAddress(contract_address)
     dest = Web3.toChecksumAddress(destination_address)
+    token = Web3.toChecksumAddress(token_address)
             
     contract = w3.eth.contract(address = contract_address, abi=abi)
 
@@ -72,7 +73,8 @@ def main(keystore_path, contract_address, destination_address, amount, sig_1, si
         'chainId': chain_id
     }
 
-    contract_tx = contract.functions.spend(dest,
+    contract_tx = contract.functions.spend(token, 
+                                           dest,
                                            wei,
                                            parsed_sig_1[0],
                                            to_bytes(hexstr=parsed_sig_1[1]),
@@ -105,4 +107,4 @@ def main(keystore_path, contract_address, destination_address, amount, sig_1, si
 if __name__ == '__main__':
     if (len(sys.argv) < 5):
         sys.exit("USAGE: spend_ethereum_multisig KEYSTORE CONTRACT_ADDRESS DESTINATION_ADDRESS AMOUNT(ETH) SIGNATURE_1 SIGNATURE_2")
-    main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
+    main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
