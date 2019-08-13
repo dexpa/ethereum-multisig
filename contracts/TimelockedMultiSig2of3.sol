@@ -38,6 +38,7 @@ pragma solidity ^0.4.24;
 //
 // Developed by Unchained Capital, Inc.
 // Updated Ilya Evdokimov using Radek Ostrowski materials "Time-locked Wallets: An Introduction to Ethereum Smart Contracts"
+// Reviewed by Magomed Aliev and Serge Potekhin 
 
 import "./ERC20.sol";
 
@@ -55,7 +56,7 @@ contract TimelockedMultiSig2of3 {
     // Contract Versioning
     uint256 public unchainedMultisigVersionMajor = 2;
     uint256 public unchainedMultisigVersionMinor = 1;
-    
+
     // TimeLock conditions
     uint public unlockDate;
     uint public createdAt;
@@ -82,14 +83,9 @@ contract TimelockedMultiSig2of3 {
         owners[owner1] = true;
         owners[owner2] = true;
         owners[owner3] = true;
-        
+
         unlockDate = _unlockDate;
         createdAt = now;
-    }
-
-    // The fallback function for this contract.
-    function() public payable {
-        emit Funded(address(this).balance);
     }
 
     // Generates the message to sign given the output destination address and amount.
@@ -148,7 +144,7 @@ contract TimelockedMultiSig2of3 {
                 v2, r2, s2
             ),
             "4");
-        spendNonce = spendNonce + 1; 
+        spendNonce = spendNonce + 1;
 	    token.transfer(destination, value);
    	    emit Spent(tokenContract, destination, value);
     }
